@@ -80,7 +80,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         var self = this;
         this.handle.getReference(id, function(err, refHandle){
             if(err) {
-                console.error('failed to get git tree %s for git repository %s, gitteh error: %s',
+                console.error('failed to get git ref %s for git repository %s, gitteh error: %s',
                     id,
                     self.path,
                     err);
@@ -94,7 +94,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         var self = this;
         this.handle.getReference(name, function(err, handle){
             if(err) {
-                console.error('failed to get git tree %s for git repository %s, gitteh error: %s',
+                console.error('failed to get git branch %s for git repository %s, gitteh error: %s',
                     name,
                     self.path,
                     err);
@@ -147,7 +147,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         var self = this;
         this.handle.getReference(name, function(err, refHandle){
             if(err) {
-                console.error('failed to get git tree %s for git repository %s, gitteh error: %s',
+                console.error('failed to get git ref %s for git repository %s, gitteh error: %s',
                     name,
                     self.path,
                     err);
@@ -155,7 +155,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             } else {
                 self.handle.getTag(refHandle.target, function(err, tagHandle){
                     if(err){
-                        console.error('failed to get git tree %s for git repository %s, gitteh error: %s',
+                        console.error('failed to get git tag %s for git repository %s, gitteh error: %s',
                             id,
                             self.path,
                             err);
@@ -171,7 +171,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         var self = this;
         this.handle.getBlob(id, function(err, handle){
             if(err) {
-                console.error('failed to get git tree %s for git repository %s, gitteh error: %s',
+                console.error('failed to get git blob %s for git repository %s, gitteh error: %s',
                     id,
                     self.path,
                     err);
