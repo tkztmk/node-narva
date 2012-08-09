@@ -5,7 +5,7 @@
         "name": "Takezoe Tomoaki",
         "email": "takezoe_tomoaki@outlook.com"
     },
-    "main": "gitano",
+    "main": "narva",
     "dependencies": {
         "gitteh": "git://github.com/cubehero/node-gitteh.git"
     }

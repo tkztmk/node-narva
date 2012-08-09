@@ -39,7 +39,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                     err);
                 callback(err); 
             } else {
-                callback(err, new Commit(self, handle)); 
+                callback(err, new narva.Commit(self, handle)); 
             }
         }); 
     };
@@ -53,13 +53,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                     err); 
                 callback(err); 
             } else {
-                callback(err, new Tree(self, handle)); 
+                callback(err, new narva.Tree(self, handle)); 
             }
         }); 
     };
     narva.Repo.prototype.getRef = function (id, callback) {
         var self = this;
-        this.handle.getRefernce(id, function(err, handle){
+        this.handle.getReference(id, function(err, refHandle){
             if(err) {
                 console.error('failed to get git tree %s for git repository %s, gitteh error: %s',
                     id,
@@ -67,35 +67,45 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                     err);
                 callback(err);
             } else {
-                callback(err, new Ref(self, handle));
+                callback(err, new narva.Ref(self, handle));
             }
         });
     }; 
-    narva.Repo.prototype.getBranch = function (id, callback) {
+    narva.Repo.prototype.getBranch = function (name, callback) {
         var self = this;
-        this.handle.getRefernce(id, function(err, handle){
+        this.handle.getReference(name, function(err, handle){
             if(err) {
                 console.error('failed to get git tree %s for git repository %s, gitteh error: %s',
-                    id,
+                    name,
                     self.path,
                     err);
                 callback(err);
             } else {
-                callback(err, new Branch(self, handle));
+                callback(err, new narva.Branch(self, handle));
             }
         });
     };
-    narva.Repo.prototype.getTag = function (id, callback) {
+    narva.Repo.prototype.getTag = function (name, callback) {
         var self = this;
-        this.handle.getRefernce(id, function(err, handle){
+        this.handle.getReference(name, function(err, refHandle){
             if(err) {
                 console.error('failed to get git tree %s for git repository %s, gitteh error: %s',
-                    id,
+                    name,
                     self.path,
                     err);
                 callback(err);
             } else {
-                callback(err, new Tag(self, handle));
+                self.handle.getTag(refHandle.target, function(err, tagHandle){
+                    if(err){
+                        console.error('failed to get git tree %s for git repository %s, gitteh error: %s',
+                            id,
+                            self.path,
+                            err);
+                        callback(err);
+                    } else {
+                        callback(err, new narva.Tag(self, tagHandle)); 
+                    }
+                });
             }
         });
     };
@@ -109,25 +119,57 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                     err);
                 callback(err);
             } else {
-                callback(err, new Blob(self, handle));
+                callback(err, new narva.Blob(self, handle));
             }
         });
     };
-    /**
-     * constructs plain narva.Object.
-     * @class Base class for Git Objects. 
-     */
+    narva.Repo.prototype.getReferences = function (callback) {
+        var self = this; 
+        this.handle.listReferences(gitteh.Gitteh.GIT_REF_LISTALL, function(err, refIds) {
+            if(err) {
+                console.error('failed to list git reference for git repository %s, gitteh error: %s', 
+                    self.repo.path, err); 
+                callback(err); 
+            } else {
+                var refs = []; 
+                refsIds.forEach(function(refId){
+                    self.repo.getRef(function(err, ref){
+                        if(err){
+                            refs = null; 
+                            callback(err); 
+                        } else {
+                            if(! refs){
+                                refs.push(ref);
+                                if(refs.length >= refIds.length){
+                                    callback(err, refs); 
+                                }
+                            }
+                        }
+                    }); 
+                }); 
+            }
+        }); 
+    }; 
+    narva.Repo.prototype.getLastUpdatedTime = function(){
+        
+    }; 
+    narva.initializeObject = function(self, repo, handle){
+        self.repo = repo; 
+        self.handle = handle;
+        if(handle){
+            self.id = handle.id;
+        }
+    }; 
     narva.Object = function (repo, handle){
-        this.repo = repo; 
-        this.handle = handle; 
-        this.id = handle.id; 
+        narva.initializeObject(this, repo, handle); 
     }; 
     narva.Commit = function (repo, handle){
-        this.prototype = new narva.Object(repo, handle); 
-        this.author = this.handle.author; 
-        this.committer = this.handle.committer; 
-        this.message = this.handle.message; 
+        narva.initializeObject(this, repo, handle);
+        this.author = handle.author; 
+        this.committer = handle.committer; 
+        this.message = handle.message; 
     }; 
+    narva.Commit.prototype = new narva.Object(); 
     narva.Commit.prototype.getParents = function(callback){
         var self = this; 
         var parents = this.handle.parents.map(function(handle){
@@ -136,17 +178,32 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         callback(null, parents); 
     };
     narva.Commit.prototype.getTree = function(callback){
-        callback(null, new narva.Tree(this.repo, this.handle.tree)); 
+        this.repo.getTree(this.handle.tree, function(err, tree){
+            callback(err, tree); 
+        }); 
     };
     narva.Tree = function (repo, handle){
-        this.prototype = new narva.Object(repo, handle);
+        narva.initializeObject(this, repo, handle);
+        this.entries = handle.entries; 
     };
-    // narva.Tree.prototype.getEntries
+    narva.Tree.prototype = new narva.Object();
+    narva.Tree.prototype.getEntries = function (callback) {
+        var self = this; 
+        var entries = this.entries.map(function(handle){
+            return new narva.TreeEntry(self.repo, handle); 
+        }); 
+        callback(null, entries); 
+    }; 
+    narva.initializeRef = function(self, repo, handle){
+        narva.initializeObject(this, repo, handle);
+        if(handle){
+            this.name = handle.name;
+            this.target = handle.target;
+            this.type = handle.type;
+        }
+    }; 
     narva.Ref = function (repo, handle){
-        this.prototype = new narva.Object(repo, handle);
-        this.name = handle.name; 
-        this.target = handle.target; 
-        this.type = handle.type; 
+        narva.initializeRef(this, repo, handle);
     };
     narva.Ref.getTargetCommit = function(callback){
         this.repo.getCommit(this.target, function(err, commit){
@@ -154,19 +211,26 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         }); 
     };
     narva.Branch = function (repo, handle){
-        this.prototype = new narva.Ref(repo, handle);
+        narva.initializeRef(this, repo, handle); 
     };
+    narva.Branch.prototype = new narva.Ref(); 
     narva.Tag = function (repo, handle){
-        this.prototype = new narva.Ref(repo, handle);
+        narva.initializeObject(this, repo, handle);
+        this.id = handle.id; 
+        this.message = handle.message; 
+        this.name = handle.name; 
+        this.targetId = handle.targetId; 
     };
     narva.Blob = function (repo, handle){
-        this.prototype = new narva.Object(repo, handle);
+        narva.initializeObject(this, repo, handle);
         this.data = handle.data; 
     };
+    narva.Blob.prototype = new narva.Object();
     // non git objects
-    narva.TreeEntry = function(handle){
+    narva.TreeEntry = function(repo, handle){
+        this.repo = repo; 
         this.handle = handle; 
-        this.attribute = handle.attribute; 
+        this.attributes = handle.attributes; 
         this.targetId = handle.id; 
         this.name = handle.name; 
     };
@@ -177,6 +241,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     };
     narva.TreeEntry.prototype.isDirectory = function(){
         var S_IFDIR = 0x4000; 
-        return this.attribute & S_IFDIR; 
+        return (this.attributes & S_IFDIR) != 0; 
     };
 })(exports); 
