@@ -46,6 +46,7 @@ describe('narva test', function(){
                         err.should.not.be.ok;
                     } else {
                         commit.message.should.equal('Merge pull request #83 from guileen/patch-1\n\nUpdate lib/should.js'); 
+                        console.log(commit.handle.committer.time); 
                     }
                     done();
                 });
@@ -177,5 +178,36 @@ describe('narva test', function(){
                 });
             }
         });
+    });
+    it('narva.Repo.getRefCommits', function(done){
+        narva.openRepo(testingRepoPath, function(err, repo){
+            if(err){
+                err.should.not.be.ok;
+            } else {
+                repo.getRefCommits(function(err, commits){
+                    if(err){
+                        err.should.not.be.ok;
+                    } else {
+                        done();
+                    }
+                })
+            };
+        })
+    });
+    it('narva.Repo.getLastUpdatedTime', function(done){
+        narva.openRepo(testingRepoPath, function(err, repo){
+            if(err){
+                err.should.not.be.ok;
+            } else {
+                repo.getLastUpdatedTime(function(err, time){
+                    if(err){
+                        err.should.not.be.ok;
+                    } else {
+                        console.log(time.toUTCString()); 
+                        done();
+                    }
+                })
+            };
+        })
     });
 }); 

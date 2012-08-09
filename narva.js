@@ -15,6 +15,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 (function(narva){
     "use strict";
     var gitteh = require('gitteh'); 
+    var async = require('async'); 
     narva.Repo = function (path, handle){
         this.path = path; 
         this.handle = handle; 
@@ -67,7 +68,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                     err);
                 callback(err);
             } else {
-                callback(err, new narva.Ref(self, handle));
+                callback(err, new narva.Ref(self, refHandle));
             }
         });
     }; 
@@ -123,35 +124,86 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             }
         });
     };
-    narva.Repo.prototype.getReferences = function (callback) {
+    narva.Repo.prototype.getRefs = function (callback) {
         var self = this; 
-        this.handle.listReferences(gitteh.Gitteh.GIT_REF_LISTALL, function(err, refIds) {
+        this.handle.listReferences(gitteh.GIT_REF_LISTALL, function(err, refIds) {
             if(err) {
                 console.error('failed to list git reference for git repository %s, gitteh error: %s', 
                     self.repo.path, err); 
                 callback(err); 
             } else {
-                var refs = []; 
-                refsIds.forEach(function(refId){
-                    self.repo.getRef(function(err, ref){
+                var getRefFuncs = refIds.map(function(refId){
+                    return function(getRefCallback){
+                        self.getRef(refId, function(err, ref){
+                            if(err){
+                                getRefCallback(err); 
+                            } else {
+                                getRefCallback(err, ref); 
+                            }
+                        })
+                    }
+                }); 
+                async.series(
+                    getRefFuncs, 
+                    function(err, results){
                         if(err){
-                            refs = null; 
                             callback(err); 
                         } else {
-                            if(! refs){
-                                refs.push(ref);
-                                if(refs.length >= refIds.length){
-                                    callback(err, refs); 
-                                }
-                            }
+                            callback(err, results); 
                         }
-                    }); 
-                }); 
+                    }
+                )
             }
         }); 
     }; 
-    narva.Repo.prototype.getLastUpdatedTime = function(){
-        
+    narva.Repo.prototype.getRefCommits = function(callback){
+        var self = this; 
+        this.getRefs(function(err, refs){
+            if(err){
+                callback(err); 
+            } else {
+                var getCommitFuncs = refs.map(function(ref){
+                    return function(getCommitCallback){
+                        self.getCommit(ref.target, function(err, commit){
+                            if(err){
+                                // FIXME: handle this error. 
+                                getCommitCallback(null);
+                            } else {
+                                getCommitCallback(err, commit); 
+                            }
+                        }); 
+                    }; 
+                }); 
+                async.series(
+                    getCommitFuncs, 
+                    function(err, results){
+                        if(err){
+                            callback(err); 
+                        } else {
+                            // FIXME: handle error commit === undefined.  
+                            callback(err, results.filter(function(commit){
+                                return commit !== undefined; 
+                            })); 
+                        }
+                    }
+                )
+            }
+        }); 
+    }; 
+    narva.Repo.prototype.getLastUpdatedTime = function(callback){
+        this.getRefCommits(function(err, commits){
+            if(err) {
+                callback(err); 
+            } else if(commits.length == 0){
+                // FIXME: currently, if no commit acquired, returns Unix Epoch.  
+                callback(err, new Date(0)); 
+            } else {
+                commits.sort(function(a, b){
+                    return a.time - b.time;
+                });
+                callback(err, commits.pop().time);
+            }
+        }) 
     }; 
     narva.initializeObject = function(self, repo, handle){
         self.repo = repo; 
@@ -165,8 +217,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     }; 
     narva.Commit = function (repo, handle){
         narva.initializeObject(this, repo, handle);
-        this.author = handle.author; 
-        this.committer = handle.committer; 
+        this.author = new narva.Signature(repo, handle.author); 
+        this.committer = new narva.Signature(repo, handle.committer); 
+        this.time = this.committer.time; 
         this.message = handle.message; 
     }; 
     narva.Commit.prototype = new narva.Object(); 
@@ -195,11 +248,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         callback(null, entries); 
     }; 
     narva.initializeRef = function(self, repo, handle){
-        narva.initializeObject(this, repo, handle);
+        narva.initializeObject(self, repo, handle);
         if(handle){
-            this.name = handle.name;
-            this.target = handle.target;
-            this.type = handle.type;
+            self.name = handle.name;
+            self.target = handle.target;
+            self.type = handle.type;
         }
     }; 
     narva.Ref = function (repo, handle){
@@ -243,4 +296,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         var S_IFDIR = 0x4000; 
         return (this.attributes & S_IFDIR) != 0; 
     };
+    narva.Signature = function(repo, handle){
+        this.repo = repo; 
+        this.handle = handle; 
+        this.email = handle.email; 
+        this.time = handle.time; 
+        this.timeOffset = handle.timeOffset; 
+    }
 })(exports); 
