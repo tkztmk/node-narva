@@ -166,10 +166,7 @@ describe('narva test', function(){
                                         if(err){
                                             err.should.not.be.ok; 
                                         } else {
-                                            //blobl.toString().should.be.equal()
-                                            console.log('---History.md---'); 
                                             blob.data.toString().indexOf('\n1.1.0 / 2012-07-30').should.equal(0); 
-                                            console.log('---History.md---'); 
                                         }
                                         done(); 
                                     });
