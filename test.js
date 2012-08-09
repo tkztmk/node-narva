@@ -203,7 +203,37 @@ describe('narva test', function(){
                     if(err){
                         err.should.not.be.ok;
                     } else {
-                        console.log(time.toUTCString()); 
+                        done();
+                    }
+                })
+            };
+        })
+    });
+    it('narva.Repo.getHistoryCommits', function(done){
+        narva.openRepo(testingRepoPath, function(err, repo){
+            if(err){
+                err.should.not.be.ok;
+            } else {
+                repo.getHistoryCommits('944c4597de42dfbbcd9643bd52082b7f00930039', function(err){
+                    if(err){
+                        err.should.not.be.ok;
+                    } else {
+                        done();
+                    }
+                })
+            };
+        })
+    });
+    it('narva.Repo.getDefaultBranch', function(done){
+        narva.openRepo(testingRepoPath, function(err, repo){
+            if(err){
+                err.should.not.be.ok;
+            } else {
+                repo.getDefaultBranch(function(err, branch){
+                    if(err){
+                        err.should.not.be.ok;
+                    } else {
+                        console.log(branch.name); 
                         done();
                     }
                 })

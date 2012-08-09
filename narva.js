@@ -86,6 +86,45 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             }
         });
     };
+    narva.Repo.prototype.tryGetBranch = function (name, callback) {
+        var self = this;
+        this.handle.getReference(name, function(err, handle){
+            if(err) {
+                callback(err);
+            } else {
+                callback(err, new narva.Branch(self, handle));
+            }
+        });
+    };
+    narva.Repo.prototype.getDefaultBranch = function(callback){
+        var self = this; 
+        var foundBranch = false; 
+        async.forEach(
+            ['master', 'gh-pages', 'default', 'trunk'], 
+            function(candidate, forEachCallback){
+                if(foundBranch){
+                    forEachCallback(null); 
+                } else {
+                    self.tryGetBranch('refs/heads/' + candidate, function(err, branch){
+                        if(err) {
+                            forEachCallback(null); 
+                        } else {
+                            foundBranch = true; 
+                            setTimeout(function(){
+                                callback(err, branch); 
+                            }, 0); 
+                            forEachCallback(null); 
+                        }
+                    }); 
+                }
+            },
+            function(err){
+                if(! foundBranch){
+                    callback('default branch cannot be detected. '); 
+                }
+            }
+        ); 
+    }; 
     narva.Repo.prototype.getTag = function (name, callback) {
         var self = this;
         this.handle.getReference(name, function(err, refHandle){
@@ -204,6 +243,67 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 callback(err, commits.pop().time);
             }
         }) 
+    }; 
+    narva.Repo.prototype.getHistoryCommits = function(since, callback){
+        var self = this; 
+        var gitProcess = require('child_process').spawn('git', ['log', since, '--format=%H', '-10'], {cwd: this.path});
+        var resultString = ''; 
+        gitProcess.stdout.on('data', function(data){
+            resultString += data.toString(); 
+        }); 
+        gitProcess.on('exit', function(code){
+            if(code != 0){
+                console.error('git log returned non zero exit code %d', code);
+                callback(util.format('git log returned non zero exit code %d', code)); 
+            } else {
+                var commitIds = resultString.split('\n').filter(function(commitId){
+                        return commitId !== ''; 
+                    }
+                ); 
+                async.map(
+                    commitIds,
+                    function(commitId, mapCallback){
+                        self.getCommit(commitId, function(err, commit){
+                            if(err){
+                                // FIXME: handle error
+                                mapCallback(null); 
+                            } else {
+                                mapCallback(err, commit);
+                            }
+                        }); 
+                    }, 
+                    function(err, results){
+                        callback(err, results); 
+                    }
+                )
+            }
+        }); 
+        //
+        /*
+        this.handle.createWalker(function(err, walker){
+            walker.sort(gitteh.GIT_SORT_TIME); 
+            walker.push(since);
+            var i = 0; 
+            async.whilst(
+                function(){
+                    return (i ++) < 10; 
+                }, 
+                function(whilstCallback){
+                    walker.next(function(err, commit){
+                        if(err){
+                            console.log(err); 
+                            i = 10; 
+                        } else {
+                            console.log(commit); 
+                        }
+                    }); 
+                }, 
+                function(err){
+                    callback(err); 
+                }
+            )
+        }); 
+        */
     }; 
     narva.initializeObject = function(self, repo, handle){
         self.repo = repo; 
