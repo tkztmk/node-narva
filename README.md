@@ -11,5 +11,5 @@ Narva is still in early development and not documented. Use the Source, Luke.
 
 ## License
 
-Narva is licensed under LGPL v3. See COPYING.md for copyright notice. 
+Narva is licensed under LGPL v3. See COPYING.md for more details. 
 

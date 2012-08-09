@@ -3,7 +3,7 @@ This software is licensed under the GNU LGPL v3 license.
 GNU LGPL v3 license 
 --------------------------------------------------------------------------------
 
-Copyright (c) 2012 Takezoe Tomoaki 
+Copyright (c) 2012 Takezoe Tomoaki <takezoe_tomoaki@outlook.com>
 
 This software is free software; you can redistribute it and/or modify it under 
 the terms of the GNU Lesser General Public License as published by the Free 
