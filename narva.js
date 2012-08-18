@@ -3,21 +3,55 @@ Copyright (c) 2012 Takezoe Tomoaki <takezoe_tomoaki@outlook.com>
 
 This software is free software; you can redistribute it and/or modify it under 
 the terms of the GNU Lesser General Public License as published by the Free 
-Software Foundation; version 3 of the License. This work is distributed 
+Software Foundation, version 3 of the License. This work is distributed 
 in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the 
 implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
 the GNU Lesser General Public License for more details. 
 
-    You should have received a copy of the GNU Lesser General Public License 
+You should have received a copy of the GNU Lesser General Public License 
 along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 */
-
+/**
+ * @name narva
+ * @namespace namespace contains all narva stuff. 
+ */
 (function(narva){
     "use strict";
     var gitteh = require('gitteh'); 
     var async = require('async');
-    /**************************************************************************/
-    /* definition of private functions. */
+    //--------------------------------------------------------------------------
+    /* definitions of private functions. */
+    /**
+     * Converts the provided pseudo Array object to a real Array object. 
+     * @private
+     * @param {Object} pseudoArrayObj
+     *  The pseudo Array object to be converted to a real Array object. 
+     * @param {Integer} pseudoArrayObj.length
+     *  The length of pseudo Array object. 
+     * @param {Object} pseudoArrayObj.{Integer}i
+     *  The i-th element of Pseudo Array object. Accessed as pseudoArrayObj[i].
+     * @return {Array}
+     *  A real Array object converted from the provided pseudo Array object. 
+     * @throws Never throws. 
+     */
+    narva.pseudoArrayToArray = function(pseudoArrayObj){
+        var ret = []; 
+        for(var i = 0; i < pseudoArrayObj.length; i ++){
+            ret.push(pseudoArrayObj[i]); 
+        }
+        return ret; 
+    }
+    /**
+     * Checks if the provided pseudo Array object has zero or one elements that is not undefined. 
+     * This function is for checking the argument's length is zero or one. 
+     * Usage: <code> isNoneMultipleArguments(arguments) </code>
+     * @private
+     * @param {Object} argsObj
+     *  the pseudo Array object to be checked. 
+     * @return {Boolean}
+     *  Represents whether the provided pseudo Array has zero or one elements that is not undefined. 
+     * @throws Never throws. 
+     */
     function isNonMultipleArguments(argsObj){
         //convert arguments to a real Array instance. 
         var args = []; 
@@ -30,8 +64,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         ); 
         return filteredArgs.length < 2; 
     }
-    /**************************************************************************/
+    //--------------------------------------------------------------------------
     /* definition of narva functions. */
+    /**
+     * Opens a Git repository at the path provided. 
+     * @param {String} path
+     *  the path of repository to be opened. 
+     * @param {Function} callback
+     *  the callback fired when repository has been opened, with argument (err, {narva.Commit} commit). 
+     * @returns {narva.Repo}
+     * @throws If the repository cannot be opened, the callback fired with the argument err of non-falsy value.
+     */
     narva.openRepo = function (path, callback) {
         gitteh.openRepository(path, function(err, handle){
             if(err) {
@@ -42,12 +85,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             }
         });
     };
-    /**************************************************************************/
+    //--------------------------------------------------------------------------
     /* definition of class narva.Repo. */
+    /**
+     * @class Represents a Local Git Repository. 
+     * @param {String} path 
+     *  the Path of the Repository represented by the object.  
+     * @param {gitteh.Repository} handle 
+     *  the Gitteh handle of the Repository. 
+     * @constructor
+     * @throws Never throws. 
+     */
     narva.Repo = function (path, handle){
         this.path = path; 
         this.handle = handle; 
-    }; 
+    };
+    /**
+     * Acquires the commit represented by the provided sha1 id. 
+     * @param {String} id 
+     *  The SHA-1 id representing to the commit to be acquired. 
+     * @param {Function} callback
+     *  a callback fired when the operation finished, with argument (err, {narva.Commit} commit). 
+     * @throws If the commit cannot be acquired, the callback fired with the argument err of non-falsy value. 
+     */
     narva.Repo.prototype.getCommit = function (id, callback){
         var self = this; 
         this.handle.getCommit(id, function(err, handle){
@@ -62,6 +122,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             }
         }); 
     };
+    /**
+     * Acquires the tree represented by the provided sha1 id.
+     * @param {String} id
+     *  The SHA-1 id representing to the tree to be acquired.
+     * @param {Function} callback
+     *  a callback fired when the operation finished, with argument (err, {narva.Tree} tree). 
+     * @throws If the tree cannot be acquired, the callback fired with the arugment err of non-falsy value. 
+     */
     narva.Repo.prototype.getTree = function (id, callback) {
         var self = this; 
         this.handle.getTree(id, function(err, handle){
@@ -76,6 +144,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             }
         }); 
     };
+    /**
+     * Acquires the reference represented by the provided sha1 id.
+     * @param {String} id
+     *  The SHA-1 id representing to the reference to be acquired.
+     * @param {Function} callback
+     *  a callback fired when the operation finished, with argument (err, {narva.Ref} ref).
+     * @throws If the reference cannot be acquired, the callback fired with the arugment err of non-falsy value.
+     */
     narva.Repo.prototype.getRef = function (id, callback) {
         var self = this;
         this.handle.getReference(id, function(err, refHandle){
@@ -89,7 +165,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 callback(err, new narva.Ref(self, refHandle));
             }
         });
-    }; 
+    };
+    /**
+     * Acquires the branch that has the provided name. 
+     * @param {String} name
+     *  The name of the branch to be acquired.
+     * @param {Function} callback
+     *  a callback fired when the operation finished, with argument (err, {narva.Branch} branch).
+     * @throws If the reference cannot be acquired, the callback fired with the arugment err of non-falsy value.
+     */
     narva.Repo.prototype.getBranch = function (name, callback) {
         var self = this;
         this.handle.getReference(name, function(err, handle){
@@ -104,16 +188,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             }
         });
     };
+    /**
+     * Tries to acquire the branch that has the provided name.
+     * @param {String} name
+     *  The name of the branch to be acquired.
+     * @param {Function} callback
+     *  a callback fired when the operation finished, with argument ({narva.Branch} branch).
+     * @throws Never throws. If the branch cannot be acquired, the callback fired with argument branch of undefined. 
+     */
     narva.Repo.prototype.tryGetBranch = function (name, callback) {
         var self = this;
         this.handle.getReference(name, function(err, handle){
             if(err) {
-                callback(err);
+                callback();
             } else {
-                callback(err, new narva.Branch(self, handle));
+                callback(new narva.Branch(self, handle));
             }
         });
     };
+    /**
+     * Acquires the guessed-default branch of the repository. 
+     * @param callback
+     * @throws If the default branch cannot be acquired, the callback fired with argument err of falsy value. 
+     */
     narva.Repo.prototype.getDefaultBranch = function(callback){
         var self = this; 
         var foundBranch = false; 
@@ -138,11 +235,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             },
             function(err){
                 if(! foundBranch){
+                    console.log('default branch cannot be detected. ')
                     callback('default branch cannot be detected. '); 
                 }
             }
         ); 
-    }; 
+    };
+    /**
+     * Tries to acquire the tag that has the provided name.
+     * @param {String} name
+     *  The name of the tag to be acquired.
+     * @param {Function} callback
+     *  a callback fired when the operation finished, with argument ({narva.Tag} tag).
+     * @throws Never throws. If the branch cannot be acquired, the callback fired with argument tag of undefined.
+     */
     narva.Repo.prototype.getTag = function (name, callback) {
         var self = this;
         this.handle.getReference(name, function(err, refHandle){
@@ -264,6 +370,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     }; 
     narva.Repo.prototype.getHistoryCommits = function(since, callback){
         var self = this; 
+        /*
         var gitProcess = require('child_process').spawn('git', ['log', since, '--format=%H', '-10'], {cwd: this.path});
         var resultString = ''; 
         gitProcess.stdout.on('data', function(data){
@@ -296,8 +403,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 )
             }
         }); 
+        */
         //
-        /*
         this.handle.createWalker(function(err, walker){
             walker.sort(gitteh.GIT_SORT_TIME); 
             walker.push(since);
@@ -307,6 +414,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                     return (i ++) < 10; 
                 }, 
                 function(whilstCallback){
+                    console.log('execute next'); 
                     walker.next(function(err, commit){
                         if(err){
                             console.log(err); 
@@ -314,6 +422,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                         } else {
                             console.log(commit); 
                         }
+                        whilstCallback(err); 
                     }); 
                 }, 
                 function(err){
@@ -321,10 +430,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 }
             )
         }); 
-        */
     };
-    /**************************************************************************/
+    //--------------------------------------------------------------------------
     /* definition of class narva.Object. */
+    /**
+     * 
+     * @param self
+     * @param repo
+     * @param handle
+     */
     narva.initializeObject = function(self, repo, handle){
         if(isNonMultipleArguments(arguments)){
             // Default Constructor. 
@@ -338,7 +452,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     narva.Object = function (repo, handle){
         narva.initializeObject(this, repo, handle); 
     };
-    /**************************************************************************/
+    //--------------------------------------------------------------------------
     /* definition of class narva.Commit. */
     narva.initializeCommit = function(self, repo, handle){
         if(isNonMultipleArguments(arguments)){
@@ -367,7 +481,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             callback(err, tree); 
         }); 
     };
-    /**************************************************************************/
+    //--------------------------------------------------------------------------
     /* definition of class narva.Tree. */
     narva.initializeTree = function(self, repo, handle){
         if(isNonMultipleArguments(arguments)){
@@ -388,7 +502,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         }); 
         callback(null, entries); 
     };
-    /**************************************************************************/
+    //--------------------------------------------------------------------------
     /* definition of class narva.Ref. */
     narva.initializeRef = function(self, repo, handle){
         if(isNonMultipleArguments(arguments)){
@@ -409,7 +523,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             callback(err, commit); 
         }); 
     };
-    /**************************************************************************/
+    //--------------------------------------------------------------------------
     /* definition of class narva.Branch. */
     narva.initializeBranch = function(self, repo, handle){
         if(isNonMultipleArguments(arguments)){
@@ -422,7 +536,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         narva.initializeBranch(this, repo, handle); 
     };
     narva.Branch.prototype = new narva.Ref();
-    /**************************************************************************/
+    //--------------------------------------------------------------------------
     /* definition of class narva.Tag. */
     narva.initializeTag = function(self, repo, handle){
         if(isNonMultipleArguments(arguments)){
@@ -438,8 +552,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     narva.Tag = function (repo, handle){
         narva.initializeTag(this, repo, handle);
     };
-    narva.Tag.prototype = new narva.Object(); 
-    /**************************************************************************/
+    narva.Tag.prototype = new narva.Object();
+    //--------------------------------------------------------------------------
     /* definition of class narva.Blob. */
     narva.initializeBlob = function(self, repo, handle){
         if(isNonMultipleArguments(arguments)){
@@ -453,9 +567,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         narva.initializeBlob(this, repo, handle);
     };
     narva.Blob.prototype = new narva.Object();
-    /**************************************************************************/
+    //--------------------------------------------------------------------------
     // non git objects
-    /**************************************************************************/
+    //--------------------------------------------------------------------------
     /* definition of class narva.TreeEntry. */
     narva.initializeTreeEntry = function(self, repo, handle){
         if(isNonMultipleArguments(arguments)){
@@ -477,12 +591,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             callback(err, blob); 
         }); 
     };
+    /**
+     * detect whether TreeEntry's target is a directory.  
+     * @return {Boolean}
+     */
     narva.TreeEntry.prototype.isDirectory = function(){
         var S_IFDIR = 0x4000; 
         return (this.attributes & S_IFDIR) != 0; 
     };
-    /**************************************************************************/
+    //--------------------------------------------------------------------------
     /* definition of class narva.Signature. */
+    /**
+     * 
+     * @param {narva.Signature} self 
+     *  signature object to be initialized. 
+     * @param {narva.Repo} repo 
+     *  repository that signature is initialized with. 
+     * @param {gitteh.Signature} handle 
+     *  Gitteh Signature Object that signature is initialized with. 
+     */
     narva.initializeSignature = function(self, repo, handle){
         if(isNonMultipleArguments(arguments)){
             // Default Constructor. 
@@ -494,6 +621,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         self.time = handle.time; 
         self.timeOffset = handle.timeOffset; 
     }
+    /**
+     * 
+     * @param repo
+     * @param handle
+     * @constructor
+     */
     narva.Signature = function(repo, handle){
         narva.initializeSignature(this, repo, handle); 
     }

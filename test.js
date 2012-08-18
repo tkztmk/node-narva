@@ -27,47 +27,82 @@ var narva = require(__dirname + '/narva.js');
 
 describe('narva test', function(){
     "use strict";
-    var testingRepoPath = __dirname + '/tmp/should/'; 
-    it('narva.openRepo', function(done){
+    var testingRepoPath = __dirname + '/tmp/should'; 
+    function openTestRepo(callback){
         narva.openRepo(testingRepoPath, function(err, repo){
             if(err){
-                err.should.not.be.ok; 
+                err.should.not.be.ok;
+                callback(err); 
+            } else {
+                callback(err, repo); 
+            }
+        });
+    }
+    it('narva.openRepo', function(done){
+        openTestRepo(function(err, repo){
+            if(err){
+                err.should.not.be.ok;
+            } else {
+                
             }
             done(); 
         }); 
     });
+    var testCommitId = '944c4597de42dfbbcd9643bd52082b7f00930039'; 
+    function getTestCommit(callback){
+        openTestRepo(function(err, repo){
+            if(err){
+                err.should.not.be.ok; 
+                callback(err); 
+            } else {
+                repo.getCommit(testCommitId, function(err, commit){
+                    if(err){
+                        err.should.not.be.ok; 
+                        callback(err); 
+                    } else {
+                        callback(err, commit); 
+                    }
+                }); 
+            }
+        }); 
+    }
     it('narva.Repo.getCommit', function(done){
-        narva.openRepo(testingRepoPath, function(err, repo){
+        getTestCommit(function(err, commit){
             if(err){
-                err.should.not.be.ok;
+                err.should.not.be.ok; 
             } else {
-                repo.getCommit('944c4597de42dfbbcd9643bd52082b7f00930039', function(err, commit){
-                    if(err){
-                        err.should.not.be.ok;
-                    } else {
-                        commit.message.should.equal('Merge pull request #83 from guileen/patch-1\n\nUpdate lib/should.js'); 
-                        console.log(commit.handle.committer.time); 
-                    }
-                    done();
-                });
+                commit.message.should.equal('Merge pull request #83 from guileen/patch-1\n\nUpdate lib/should.js'); 
             }
-        });
+            done(); 
+        }); 
     });
-    it('narva.Repo.getBranch', function(done){
-        narva.openRepo(testingRepoPath, function(err, repo){
+    var testBranchName = 'refs/heads/master'; 
+    function getTestBranch(callback){
+        openTestRepo(function(err, repo){
             if(err){
-                err.should.not.be.ok;
+                err.should.not.be.ok; 
+                callback(err); 
             } else {
-                repo.getBranch('refs/heads/master', function(err, branch){
+                repo.getBranch(testBranchName, function(err, branch){
                     if(err){
-                        err.should.not.be.ok;
+                        err.should.not.be.ok; 
+                        callback(err); 
                     } else {
-                        //branch.target.should.equal('944c4597de42dfbbcd9643bd52082b7f00930039'); 
+                        callback(err, branch); 
                     }
-                    done();
-                });
+                }); 
             }
-        });
+        })
+    }
+    it('narva.Repo.getBranch', function(done){
+        getTestBranch(function(err, branch){
+            if(err){
+                err.should.not.be.ok; 
+            } else {
+                //branch.target.should.equal('944c4597de42dfbbcd9643bd52082b7f00930039'); 
+            }
+            done(); 
+        }); 
     });
     it('narva.Repo.getTag', function(done){
         narva.openRepo(testingRepoPath, function(err, repo){
