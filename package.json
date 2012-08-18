@@ -1,0 +1,13 @@
+{
+    "name": "narva",
+    "version": "0.0.1",
+    "author": {
+        "name": "Takezoe Tomoaki",
+        "email": "takezoe_tomoaki@outlook.com"
+    },
+    "main": "narva",
+    "dependencies": {
+        "gitteh": "git://github.com/cubehero/node-gitteh.git", 
+        "async": "*"
+    }
+}
